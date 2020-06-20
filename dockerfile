@@ -18,6 +18,9 @@ RUN pip3 install -r requirements.txt
 
 # jupyterlabの"Table of Contents"
 RUN jupyter labextension install @jupyterlab/toc
+# jupyterlabの"tqdm"
+RUN jupyter labextension install @jupyter-widgets/jupyterlab-manager
+RUN jupyter nbextension enable --py --sys-prefix widgetsnbextension
 
 # 作業ディレクトリ
 WORKDIR /home/workspace/src
