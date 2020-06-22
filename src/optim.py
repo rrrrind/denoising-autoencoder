@@ -11,46 +11,50 @@ class GradientDescent(object):
         self.grad_b1 = None
         self.grad_w1 = None
         
+        self.grad_b1_temp = None
+        
     def calc_grad(self,inputs,middles,outputs,corrects):
-        self.grad_b2 = np.zeros((len(outputs),1))
-        self.grad_w2 = np.zeros((len(outputs),len(middles)))
-        self.grad_b1 = np.zeros((len(middles),1))
-        self.grad_w1 = np.zeros((len(middles),len(inputs)))
+        self.grad_b2 = np.zeros((len(outputs),len(inputs[0])))
+        self.grad_w2 = np.zeros((len(outputs),len(middles),len(inputs[0])))
+        self.grad_b1 = np.zeros((len(middles),len(inputs[0])))
+        self.grad_w1 = np.zeros((len(middles),len(inputs),len(inputs[0])))
+        self.grad_b1_temp = np.zeros((len(middles),len(inputs)))
         
         for a in range(self.data_num):
             # 出力層のバイアスの勾配の導出
-            self.grad_b2[a] = (2/self.wave_len) * outputs * (1 - outputs) * (outputs - corrects)
-            print(np.shape(self.grad_b2))
+            self.grad_b2[:,a] = (2/self.wave_len) * outputs[:,a] * (1 - outputs[:,a]) * (outputs[:,a] - corrects[:,a])
+
             # 出力層の重みの勾配の導出
-            for l, x2 in enumerate(middles):
-                self.grad_w2[a][l] = x2 * self.grad_b2
+            for l in range(len(middles)):
+                self.grad_w2[:,l,a] = middles[l,a] * self.grad_b2[:,a]
         
             # 中間層のバイアスの勾配の導出
-            for m in range(len(middles)):
-                self.grad_b1[m] = middles * (1 - middles) * np.sum(self.grad_b2 * self.model.layer2.weight()[:,m])
+            for m in range(len(inputs)):
+                self.grad_b1_temp[:,m] = self.grad_b2[m,a] * self.model.layer2.weight[m,:]
+            self.grad_b1[:,a] = middles[:,a] * (1 - middles[:,a]) * np.sum(self.grad_b1_temp,axis=1)
         
             # 中間層の重みの勾配の導出
-            for n, x1 in enumerate(inputs):
-                self.grad_w1[n] = x1 * self.grad_b1
-            
+            for n in range(len(inputs)):
+                self.grad_w1[:,n,a] = inputs[n,a] * self.grad_b1[:,a]
+        
         # データ数で除算する
-        self.grad_b2 = self.grad_b2 / self.data_num
-        self.grad_w2 = self.grad_w2 / self.data_num
-        self.grad_b1 = self.grad_b1 / self.data_num
-        self.grad_w1 = self.grad_w1 / self.data_num
+        self.grad_b2 = np.sum(self.grad_b2,axis=1) / self.data_num
+        self.grad_w2 = np.sum(self.grad_w2,axis=2) / self.data_num
+        self.grad_b1 = np.sum(self.grad_b1,axis=1) / self.data_num
+        self.grad_w1 = np.sum(self.grad_w1,axis=2) / self.data_num
+        
+        self.grad_b2 = np.reshape(self.grad_b2, [len(self.grad_b2),1])
+        self.grad_b1 = np.reshape(self.grad_b1, [len(self.grad_b1),1])
         
     def update(self,inputs,middles,outputs,corrects,gamma=0.01):
         self.calc_grad(inputs,middles,outputs,corrects)
         
-        new_bias2 = self.model.layer2.bias() - gamma * self.grad_b2
-        self.model.layer2.bias(new_bias2)
+        self.model.layer2.bias = self.model.layer2.bias - gamma * self.grad_b2
         
-        new_weight2 = self.model.layer2.weight() - gamma * self.grad_w2
-        self.model.layer2.bias(new_weight2)
-        
-        new_bias1 = self.model.layer1.bias() - gamma * self.grad_b1
-        self.model.layer2.bias(new_bias1)
-        
-        new_weight1 = self.model.layer1.weight() - gamma * self.grad_w1
-        self.model.layer2.bias(new_weight1)
+        self.model.layer2.weight = self.model.layer2.weight - gamma * self.grad_w2
+
+        self.model.layer1.bias = self.model.layer1.bias - gamma * self.grad_b1
+
+        self.model.layer1.weight = self.model.layer1.weight - gamma * self.grad_w1
+
         

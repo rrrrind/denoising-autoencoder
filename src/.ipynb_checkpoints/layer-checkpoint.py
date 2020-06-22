@@ -2,8 +2,8 @@ import numpy as np
 
 class FullyConnectedLayer(object):
     def __init__(self, input_dim, output_dim):
-        self.__weight = 0.5 * np.random.rand(output_dim,input_dim)
-        self.__bias = 0.5 * np.random.rand(output_dim,1)
+        self.__weight = 0.01 * np.random.rand(output_dim,input_dim)
+        self.__bias = 0.01 * np.random.rand(output_dim,1)
     
     @property
     def weight(self):
